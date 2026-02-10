@@ -17,7 +17,7 @@ import {
   Search,
   Loader2
 } from 'lucide-react';
-import { MealType, FoodCategory } from '../types';
+import { MealType, FoodCategory } from '../types.ts';
 import { GoogleGenAI, Type } from "@google/genai";
 
 interface MenuPlannerProps {
@@ -102,29 +102,24 @@ const MenuPlanner: React.FC<MenuPlannerProps> = ({ onBack }) => {
   const calculateDisplayWeight = (category: string, baseInput: number, weightPerUnit: number) => {
     const categoryConfig = EXCHANGE_RATES[category];
     if (!categoryConfig) return 0;
-    // 公式: (需求量 / 基准量) * 目标食物的一份克重
     return Math.round((baseInput / categoryConfig.baseWeight) * weightPerUnit);
   };
 
   const handleCustomFoodSearch = async (category: string, query: string) => {
     if (!query.trim()) return;
     
-    // 先看本地有没有
     const localMatch = EXCHANGE_RATES[category]?.options.find(o => o.name.includes(query) || query.includes(o.name));
     if (localMatch) {
       setSelectedFoods(prev => ({...prev, [category]: { name: localMatch.name, weightPerUnit: localMatch.weight }}));
       return;
     }
 
-    // AI 估算
     setIsAiEstimating(category);
+    // Corrected to create instance right before making an API call.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const model = 'gemini-3-flash-preview';
     
-    const prompt = `你是一位妊娠期糖尿病营养专家。请分析食物 "${query}"。
-    它属于 "${category}" 类别。
-    请估算该食物提供 1 个“食品交换份”（即 90 千卡热量）时，对应的标准食用克重是多少。
-    请仅返回克数（数字）和该食物的正式名称。`;
+    const prompt = `你是一位妊娠期糖尿病营养专家。请分析食物 "${query}"，它属于 "${category}" 类别。请估算该食物提供 1 个“食品交换份”（即 90 千卡热量）时，对应的标准食用克重。请以 JSON 格式返回。`;
 
     try {
       const response = await ai.models.generateContent({
@@ -155,6 +150,7 @@ const MenuPlanner: React.FC<MenuPlannerProps> = ({ onBack }) => {
 
   const handleGenerateMenu = async () => {
     setIsGenerating(true);
+    // Corrected to create instance right before making an API call.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const model = 'gemini-3-flash-preview';
     
@@ -175,9 +171,9 @@ const MenuPlanner: React.FC<MenuPlannerProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6 pb-20">
+    <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6 pb-20 overflow-x-hidden">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="p-2 -ml-2 text-slate-500"><ChevronLeft size={24} /></button>
+        <button onClick={onBack} className="p-2 -ml-2 text-slate-500 hover:text-rose-500 transition-colors"><ChevronLeft size={24} /></button>
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">智能配餐规划</h2>
         <button 
           onClick={handleGenerateMenu} 
@@ -252,9 +248,9 @@ const MenuPlanner: React.FC<MenuPlannerProps> = ({ onBack }) => {
 
       {aiMenu && (
         <section className="bg-rose-50 p-6 rounded-3xl border border-rose-100 animate-in zoom-in-95 duration-300">
-          <h3 className="font-bold text-rose-800 mb-3 flex items-center gap-2"><Zap size={18} /> 专家推荐菜单</h3>
-          <div className="prose prose-sm text-rose-900 leading-relaxed whitespace-pre-wrap text-[11px]">{aiMenu}</div>
-          <button onClick={() => setAiMenu(null)} className="mt-4 text-[10px] font-bold text-rose-400 uppercase">关闭</button>
+          <h3 className="font-bold text-rose-800 mb-3 flex items-center gap-2 font-bold"><Zap size={18} /> 专家推荐菜单</h3>
+          <div className="prose prose-sm text-rose-900 leading-relaxed whitespace-pre-wrap text-[11px] font-medium">{aiMenu}</div>
+          <button onClick={() => setAiMenu(null)} className="mt-4 text-[10px] font-black text-rose-400 uppercase tracking-widest">关闭报告</button>
         </section>
       )}
     </div>
@@ -263,12 +259,12 @@ const MenuPlanner: React.FC<MenuPlannerProps> = ({ onBack }) => {
 
 const WeightInput: React.FC<{ label: string, value: number, onChange: (v: string) => void, icon: React.ReactNode }> = ({ label, value, onChange, icon }) => (
   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-    <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+    <div className="flex items-center gap-1.5 mb-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">
       {icon} {label}
     </div>
     <input 
       type="number" value={value || ''} onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-slate-800"
+      className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-black text-slate-800"
       placeholder="0"
     />
   </div>
@@ -290,30 +286,31 @@ const ExchangeSection: React.FC<{
   return (
     <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+        <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
           {category === FoodCategory.STAPLE && <Utensils size={14} className="text-amber-500" />}
           {category === FoodCategory.PROTEIN && <Zap size={14} className="text-blue-500" />}
           {category === FoodCategory.VEGETABLE && <ChefHat size={14} className="text-emerald-500" />}
           {category}换算
         </h4>
-        <div className="bg-rose-50 px-3 py-1 rounded-full border border-rose-100 flex items-baseline gap-1">
+        <div className="bg-rose-50 px-3 py-1 rounded-full border border-rose-100 flex items-baseline gap-1 shadow-sm">
           <span className="text-sm font-black text-rose-500">{calculate(category, baseValue, activeFood.weightPerUnit)}</span>
-          <span className="text-[10px] font-bold text-rose-400">g</span>
+          <span className="text-[10px] font-black text-rose-400 uppercase">g</span>
         </div>
       </div>
 
-      <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+      <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100 focus-within:ring-1 focus-within:ring-rose-200 transition-all">
         <input 
           type="text" 
-          placeholder="搜索或输入食物名称" 
+          placeholder="搜索或输入其他食物" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-medium"
+          onKeyDown={(e) => e.key === 'Enter' && onSearch(searchQuery)}
+          className="flex-1 bg-transparent border-none focus:ring-0 text-[11px] font-bold text-slate-600"
         />
         <button 
           onClick={() => onSearch(searchQuery)}
           disabled={isEstimating || !searchQuery}
-          className="p-1.5 text-rose-500 hover:bg-white rounded-xl transition-all disabled:opacity-30"
+          className="p-1.5 text-rose-500 hover:bg-white rounded-xl transition-all disabled:opacity-30 active:scale-90"
         >
           {isEstimating ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
         </button>
@@ -327,15 +324,15 @@ const ExchangeSection: React.FC<{
               onSelect(opt.name, opt.weight);
               setSearchQuery('');
             }}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
-              activeFood.name === opt.name ? 'bg-rose-500 border-rose-500 text-white shadow-md' : 'bg-white border-slate-100 text-slate-500'
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${
+              activeFood.name === opt.name ? 'bg-rose-500 border-rose-500 text-white shadow-md scale-105' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'
             }`}
           >
             {opt.name}
           </button>
         ))}
         {currentSelection && !options.find(o => o.name === currentSelection.name) && (
-          <button className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-rose-500 border-rose-500 text-white shadow-md">
+          <button className="flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black bg-rose-500 border-rose-500 text-white shadow-md scale-105">
             {currentSelection.name} (AI)
           </button>
         )}

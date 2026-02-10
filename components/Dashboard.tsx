@@ -11,7 +11,7 @@ import {
   ChefHat,
   FileSpreadsheet
 } from 'lucide-react';
-import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming } from '../types';
+import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming } from '../types.ts';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts';
 
 interface DashboardProps {
@@ -45,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
             <span className="text-3xl font-bold">{latestGlucose?.value || '--'}</span>
             <span className="text-xs">{latestGlucose?.unit || 'mmol/L'}</span>
           </div>
-          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block">
+          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block font-bold">
             {latestGlucose?.timing || '暂无数据'}
           </p>
         </div>
@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
             <span className="text-3xl font-bold">{totalCarbsToday}</span>
             <span className="text-xs">g</span>
           </div>
-          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block">
+          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block font-bold">
             目标: ~150g
           </p>
         </div>
@@ -142,7 +142,7 @@ const ShortcutItem: React.FC<{ icon: React.ReactNode, label: string, desc: strin
       </div>
       <div className="text-left">
         <p className="font-bold text-slate-800 text-sm">{label}</p>
-        <p className="text-[11px] text-slate-500">{desc}</p>
+        <p className="text-[11px] text-slate-500 font-medium">{desc}</p>
       </div>
     </div>
     <ChevronRight className="text-slate-300" size={18} />
