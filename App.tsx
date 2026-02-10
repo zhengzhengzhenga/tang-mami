@@ -14,14 +14,14 @@ import {
   ChefHat,
   Download
 } from 'lucide-react';
-import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming, MealType } from './types.ts';
-import Dashboard from './components/Dashboard.tsx';
-import GlucoseTracker from './components/GlucoseTracker.tsx';
-import MealLogger from './components/MealLogger.tsx';
-import AIAdvisor from './components/AIAdvisor.tsx';
-import DailyReport from './components/DailyReport.tsx';
-import MenuPlanner from './components/MenuPlanner.tsx';
-import DataExport from './components/DataExport.tsx';
+import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming, MealType } from './types';
+import Dashboard from './components/Dashboard';
+import GlucoseTracker from './components/GlucoseTracker';
+import MealLogger from './components/MealLogger';
+import AIAdvisor from './components/AIAdvisor';
+import DailyReport from './components/DailyReport';
+import MenuPlanner from './components/MenuPlanner';
+import DataExport from './components/DataExport';
 
 type View = 'dashboard' | 'glucose' | 'meals' | 'exercise' | 'chat' | 'profile' | 'daily' | 'planner' | 'export';
 
@@ -141,8 +141,8 @@ const App: React.FC = () => {
       <header className="p-6 bg-white border-b sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight text-rose-500">甜护宝</h1>
-            <p className="text-xs text-slate-500 font-medium">妊娠期糖尿病健康管理</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">甜护宝</h1>
+            <p className="text-sm text-slate-500">妊娠期健康伴侣</p>
           </div>
           <button 
             onClick={() => setCurrentView('profile')}
@@ -153,11 +153,11 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 p-4 overflow-x-hidden">
+      <main className="flex-1 p-4">
         {renderView()}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t flex justify-around items-center py-3 px-2 max-w-md mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t flex justify-around items-center py-3 px-2 max-w-md mx-auto shadow-2xl z-20">
         <NavButton 
           active={currentView === 'dashboard'} 
           onClick={() => setCurrentView('dashboard')}
@@ -203,10 +203,10 @@ interface NavButtonProps {
 const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon, label }) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 transition-all duration-300 ${active ? 'text-rose-500 transform scale-110' : 'text-slate-400'}`}
+    className={`flex flex-col items-center gap-1 transition-all duration-200 ${active ? 'text-rose-500 transform scale-110' : 'text-slate-400'}`}
   >
     {icon}
-    <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+    <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
   </button>
 );
 

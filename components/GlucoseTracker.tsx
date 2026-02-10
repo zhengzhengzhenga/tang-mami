@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   ChevronLeft, 
@@ -15,7 +14,7 @@ import {
   Info,
   X
 } from 'lucide-react';
-import { GlucoseLog, GlucoseTiming, MealLog, MealType } from '../types.ts';
+import { GlucoseLog, GlucoseTiming, MealLog, MealType } from '../types';
 import { 
   LineChart, 
   Line, 
@@ -277,7 +276,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                             <p className={`text-xs font-bold ${associatedMealId === m.id ? 'text-amber-800' : 'text-slate-700'}`}>
                               {m.description || m.type}
                             </p>
-                            <p className="text-[10px] text-slate-400 font-medium">
+                            <p className="text-[10px] text-slate-400">
                               {m.type} · {new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </p>
                           </div>
@@ -392,7 +391,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                             <div>
                               <p className={`text-lg font-bold flex items-baseline gap-1 ${isAbnormal(item.data.value, item.data.timing) ? 'text-rose-600' : 'text-emerald-600'}`}>
                                 {item.data.value} 
-                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-tight">{item.data.timing}</span>
+                                <span className="text-[9px] uppercase font-bold text-slate-400">{item.data.timing}</span>
                               </p>
                               {mealDesc && (
                                 <p className="text-[9px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
