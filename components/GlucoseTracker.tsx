@@ -231,6 +231,14 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
     setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() + offset)));
   };
 
+  const getMealFoodDetail = (meal?: MealLog) => {
+    if (!meal?.items || meal.items.length === 0) return '';
+    return meal.items
+      .filter(i => i.name)
+      .map(i => `${i.name}${i.weight ? `(${i.weight}g)` : ''}`)
+      .join('、');
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -410,9 +418,13 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
             <div className="space-y-4 relative ml-4 border-l-2 border-slate-100 pl-6 pb-4">
               {dailyTimeline.length > 0 ? dailyTimeline.map((item, idx) => {
                 let mealDesc = "";
+                let mealFoodDetail = "";
                 if (item.type === 'glucose' && item.data.associatedMealId) {
                   const linkedMeal = mealLogs.find(m => m.id === item.data.associatedMealId);
-                  if (linkedMeal) mealDesc = linkedMeal.description;
+                  if (linkedMeal) {
+                    mealDesc = linkedMeal.description;
+                    mealFoodDetail = getMealFoodDetail(linkedMeal);
+                  }
                 }
 
                 return (
@@ -434,6 +446,11 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                               <span className="bg-amber-50 text-amber-600 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">{item.data.type}</span>
                               <h4 className="font-bold text-slate-800 text-xs">{item.data.description}</h4>
                             </div>
+                            {getMealFoodDetail(item.data) && (
+                              <p className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                                {getMealFoodDetail(item.data)}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -466,9 +483,9 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                                   {item.data.value} 
                                   <span className="text-[9px] uppercase font-bold text-slate-400">{item.data.timing}</span>
                                 </p>
-                                {mealDesc && (
+                                {(mealFoodDetail || mealDesc) && (
                                   <p className="text-[9px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
-                                    <Utensils size={10} className="text-amber-500" /> {mealDesc}
+                                    <Utensils size={10} className="text-amber-500" /> {mealFoodDetail || mealDesc}
                                   </p>
                                 )}
                               </div>

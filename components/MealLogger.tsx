@@ -5,17 +5,13 @@ import {
   Camera, 
   Plus, 
   Trash2, 
-  Loader2, 
   Utensils, 
-  Info, 
   Edit3, 
-  Save, 
   Scale, 
   ChevronDown,
   Calendar as CalendarIcon
 } from 'lucide-react';
 import { MealLog, MealType, FoodCategory, FoodItem } from '../types';
-import { analyzeMeal } from '../services/geminiService';
 
 interface MealLoggerProps {
   logs: MealLog[];
@@ -32,7 +28,6 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [description, setDescription] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -77,23 +72,6 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAnalyze = async () => {
-    const manualDesc = foodItems.map(i => `${i.category}: ${i.name} ${i.weight}g`).join(', ');
-    const fullDesc = `${description} ${manualDesc}`.trim();
-    if (!fullDesc && !imagePreview) return;
-    
-    setIsAnalyzing(true);
-    try {
-      const base64Image = imagePreview?.split(',')[1];
-      const result = await analyzeMeal(fullDesc, base64Image);
-      setAnalysisResult(result);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -331,35 +309,7 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
               />
             </div>
 
-            {!analysisResult ? (
-              <button
-                disabled={isAnalyzing || (foodItems.length === 0 && !description && !imagePreview)}
-                onClick={handleAnalyze}
-                className="w-full py-4 bg-amber-50 text-amber-600 border border-amber-200 rounded-2xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 active:bg-amber-100 transition-all shadow-sm"
-              >
-                {isAnalyzing ? <><Loader2 className="animate-spin" size={20} /> 分析中...</> : <><Utensils size={18}/> AI 营养评估</>}
-              </button>
-            ) : (
-              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-2 mb-3 text-amber-800">
-                  <Info size={18} />
-                  <h4 className="font-bold text-sm">营养预估</h4>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-white p-2 rounded-xl border border-amber-100 text-center">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">碳水</p>
-                    <p className="text-lg font-bold text-rose-500">{analysisResult.carbs}g</p>
-                  </div>
-                  <div className="bg-white p-2 rounded-xl border border-amber-100 text-center">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">热量</p>
-                    <p className="text-lg font-bold text-slate-700">{analysisResult.calories}kcal</p>
-                  </div>
-                </div>
-                <p className="text-xs text-amber-900 leading-relaxed italic mb-3">"{analysisResult.advice}"</p>
-                <button onClick={() => setAnalysisResult(null)} className="w-full py-2 text-[10px] font-bold text-amber-600 uppercase">重新评估</button>
-              </div>
-            )}
-            
+
             <div className="flex gap-3 pt-2">
               <button 
                 onClick={() => setShowAdd(false)}
