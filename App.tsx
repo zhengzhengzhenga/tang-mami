@@ -24,6 +24,7 @@ import {
   fetchMealLogs,
   fetchExerciseLogs,
   upsertGlucoseLog,
+  deleteGlucoseLog,
   upsertMealLog,
 } from './services/supabaseDataService';
 
@@ -86,12 +87,33 @@ const MainApp: React.FC = () => {
     [userId]
   );
 
-  const handleAddGlucose = useCallback(
+  const handleSaveGlucose = useCallback(
     (log: GlucoseLog) => {
-      setGlucoseLogs((prev) => [log, ...prev]);
+      setGlucoseLogs((prev) => {
+        const exists = prev.find((l) => l.id === log.id);
+        if (exists) {
+          return prev
+            .map((l) => (l.id === log.id ? log : l))
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        return [log, ...prev];
+      });
       syncGlucose(log);
     },
     [syncGlucose]
+  );
+
+  const handleDeleteGlucose = useCallback(
+    async (id: string) => {
+      setGlucoseLogs((prev) => prev.filter((l) => l.id !== id));
+      if (!userId) return;
+      try {
+        await deleteGlucoseLog(id, userId);
+      } catch (err) {
+        console.error('Delete glucose failed:', err);
+      }
+    },
+    [userId]
   );
 
   const handleAddMeal = useCallback(
@@ -122,7 +144,8 @@ const MainApp: React.FC = () => {
           <GlucoseTracker
             logs={glucoseLogs}
             mealLogs={mealLogs}
-            onAddLog={handleAddGlucose}
+            onAddLog={handleSaveGlucose}
+            onDeleteLog={handleDeleteGlucose}
             onBack={() => setCurrentView('dashboard')}
           />
         );

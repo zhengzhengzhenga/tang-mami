@@ -12,7 +12,9 @@ import {
   Utensils,
   ChevronDown,
   Info,
-  X
+  X,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { GlucoseLog, GlucoseTiming, MealLog, MealType } from '../types';
 import { 
@@ -31,15 +33,18 @@ interface GlucoseTrackerProps {
   logs: GlucoseLog[];
   mealLogs: MealLog[];
   onAddLog: (log: GlucoseLog) => void;
+  onDeleteLog: (id: string) => void;
   onBack: () => void;
 }
 
 type TabType = 'history' | 'trend';
 type PeriodType = 'day' | 'week' | 'month';
 
-const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLog, onBack }) => {
+const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLog, onDeleteLog, onBack }) => {
   const [view, setView] = useState<TabType>('history');
   const [showAdd, setShowAdd] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editingLogTime, setEditingLogTime] = useState<Date | null>(null);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [showPointLabels, setShowPointLabels] = useState(false);
   
@@ -54,6 +59,25 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
 
   // 日历显示的月份
   const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const openAddForm = (log?: GlucoseLog) => {
+    if (log) {
+      setEditingLogId(log.id);
+      setEditingLogTime(new Date(log.timestamp));
+      setValue(String(log.value));
+      setTiming(log.timing);
+      setAssociatedMealId(log.associatedMealId);
+      setSelectedDate(new Date(log.timestamp).toISOString().split('T')[0]);
+    } else {
+      setEditingLogId(null);
+      setEditingLogTime(null);
+      setValue('');
+      setTiming(GlucoseTiming.POST_MEAL_1H);
+      setAssociatedMealId(undefined);
+      setSelectedDate(new Date().toISOString().split('T')[0]);
+    }
+    setShowAdd(true);
+  };
 
   const getGlucoseStatus = (val: number, time: GlucoseTiming): 'normal' | 'low' | 'high' => {
     if (time === GlucoseTiming.FASTING) {
@@ -98,13 +122,13 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
     if (!value) return;
     
     const logDate = new Date(selectedDate);
-    const now = new Date();
-    logDate.setHours(now.getHours(), now.getMinutes());
+    const baseTime = editingLogTime ?? new Date();
+    logDate.setHours(baseTime.getHours(), baseTime.getMinutes());
 
     const selectedMeal = availableMeals.find(m => m.id === associatedMealId);
 
     const newLog: GlucoseLog = {
-      id: Date.now().toString(),
+      id: editingLogId || Date.now().toString(),
       value: parseFloat(value),
       unit: 'mmol/L',
       timing,
@@ -116,6 +140,8 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
     onAddLog(newLog);
     setShowAdd(false);
     setValue('');
+    setEditingLogId(null);
+    setEditingLogTime(null);
     setAssociatedMealId(undefined);
     setFocusedDateStr(selectedDate);
   };
@@ -226,10 +252,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
           </button>
         </div>
         <button 
-          onClick={() => {
-            setSelectedDate(new Date().toISOString().split('T')[0]);
-            setShowAdd(true);
-          }} 
+          onClick={() => openAddForm()} 
           className="p-2 text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-100 active:scale-95 transition-all"
         >
           <Plus size={20} />
@@ -239,7 +262,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
       {showAdd ? (
         <div className="fixed inset-0 z-50 bg-white p-6 animate-in slide-in-from-bottom duration-300 overflow-y-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-bold text-slate-900">记录血糖</h2>
+            <h2 className="text-xl font-bold text-slate-900">{editingLogId ? '修改血糖' : '记录血糖'}</h2>
             <button onClick={() => setShowAdd(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full">
               <X size={20} />
             </button>
@@ -328,7 +351,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
             )}
 
             <button type="submit" className="w-full py-4 bg-rose-500 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 mt-4 active:scale-95 transition-all">
-              保存记录
+              {editingLogId ? '保存修改' : '保存记录'}
             </button>
           </form>
         </div>
@@ -414,47 +437,71 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                           </div>
                         </div>
                       ) : (
-                        <div className={`p-3 rounded-2xl border shadow-sm flex items-center justify-between ${
-                          getGlucoseStatus(item.data.value, item.data.timing) === 'high'
-                            ? 'bg-rose-50 border-rose-100'
-                            : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
-                              ? 'bg-sky-50 border-sky-100'
-                              : 'bg-emerald-50 border-emerald-100'
-                        }`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg ${
-                              getGlucoseStatus(item.data.value, item.data.timing) === 'high'
-                                ? 'bg-white text-rose-500 shadow-sm'
-                                : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
-                                  ? 'bg-white text-sky-500 shadow-sm'
-                                  : 'bg-white text-emerald-500 shadow-sm'
-                            }`}>
-                              {isAbnormal(item.data.value, item.data.timing) ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
-                            </div>
-                            <div>
-                              <p className={`text-lg font-bold flex items-baseline gap-1 ${
+                        <div className="relative group">
+                          <div className={`p-3 rounded-2xl border shadow-sm flex items-center justify-between ${
+                            getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                              ? 'bg-rose-50 border-rose-100'
+                              : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                                ? 'bg-sky-50 border-sky-100'
+                                : 'bg-emerald-50 border-emerald-100'
+                          }`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`p-1.5 rounded-lg ${
                                 getGlucoseStatus(item.data.value, item.data.timing) === 'high'
-                                  ? 'text-rose-600'
+                                  ? 'bg-white text-rose-500 shadow-sm'
                                   : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
-                                    ? 'text-sky-600'
-                                    : 'text-emerald-600'
+                                    ? 'bg-white text-sky-500 shadow-sm'
+                                    : 'bg-white text-emerald-500 shadow-sm'
                               }`}>
-                                {item.data.value} 
-                                <span className="text-[9px] uppercase font-bold text-slate-400">{item.data.timing}</span>
-                              </p>
-                              {mealDesc && (
-                                <p className="text-[9px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
-                                  <Utensils size={10} className="text-amber-500" /> {mealDesc}
+                                {isAbnormal(item.data.value, item.data.timing) ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+                              </div>
+                              <div>
+                                <p className={`text-lg font-bold flex items-baseline gap-1 ${
+                                  getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                                    ? 'text-rose-600'
+                                    : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                                      ? 'text-sky-600'
+                                      : 'text-emerald-600'
+                                }`}>
+                                  {item.data.value} 
+                                  <span className="text-[9px] uppercase font-bold text-slate-400">{item.data.timing}</span>
                                 </p>
+                                {mealDesc && (
+                                  <p className="text-[9px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
+                                    <Utensils size={10} className="text-amber-500" /> {mealDesc}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getGlucoseStatus(item.data.value, item.data.timing) === 'high' && (
+                                <span className="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏高</span>
+                              )}
+                              {getGlucoseStatus(item.data.value, item.data.timing) === 'low' && (
+                                <span className="bg-sky-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏低</span>
                               )}
                             </div>
                           </div>
-                          {getGlucoseStatus(item.data.value, item.data.timing) === 'high' && (
-                            <span className="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏高</span>
-                          )}
-                          {getGlucoseStatus(item.data.value, item.data.timing) === 'low' && (
-                            <span className="bg-sky-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏低</span>
-                          )}
+                          <div className="mt-2 flex justify-end gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => openAddForm(item.data)}
+                              className="px-2 py-1 text-[10px] rounded-lg bg-white border border-slate-200 text-slate-500 flex items-center gap-1"
+                            >
+                              <Edit3 size={12} /> 修改
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm('确认删除这条血糖记录吗？')) {
+                                  onDeleteLog(item.data.id);
+                                }
+                              }}
+                              className="px-2 py-1 text-[10px] rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center gap-1"
+                            >
+                              <Trash2 size={12} /> 删除
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
