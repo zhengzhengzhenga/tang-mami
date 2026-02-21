@@ -52,14 +52,34 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
 
   // 日历显示的月份
   const [calendarDate, setCalendarDate] = useState(new Date());
-  
-  const isAbnormal = (val: number, time: GlucoseTiming) => {
-    if (time === GlucoseTiming.FASTING) return val >= 5.1;
-    if (time === GlucoseTiming.POST_MEAL_1H) return val >= 10.0;
-    if (time === GlucoseTiming.POST_MEAL_2H) return val >= 8.5;
-    if (time === GlucoseTiming.BEFORE_SLEEP) return val >= 8.5;
-    return false;
+
+  const getGlucoseStatus = (val: number, time: GlucoseTiming): 'normal' | 'low' | 'high' => {
+    if (time === GlucoseTiming.FASTING) {
+      if (val < 3.3) return 'low';
+      if (val > 5.3) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.POST_MEAL_1H) {
+      if (val > 7.8) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.POST_MEAL_2H) {
+      if (val < 4.4) return 'low';
+      if (val > 6.7) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.BEFORE_SLEEP) {
+      if (val > 8.5) return 'high';
+      return 'normal';
+    }
+
+    return 'normal';
   };
+  
+  const isAbnormal = (val: number, time: GlucoseTiming) => getGlucoseStatus(val, time) !== 'normal';
 
   const isPostMeal = timing === GlucoseTiming.POST_MEAL_1H || timing === GlucoseTiming.POST_MEAL_2H;
 
@@ -383,13 +403,31 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                           </div>
                         </div>
                       ) : (
-                        <div className={`p-3 rounded-2xl border shadow-sm flex items-center justify-between ${isAbnormal(item.data.value, item.data.timing) ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                        <div className={`p-3 rounded-2xl border shadow-sm flex items-center justify-between ${
+                          getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                            ? 'bg-rose-50 border-rose-100'
+                            : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                              ? 'bg-sky-50 border-sky-100'
+                              : 'bg-emerald-50 border-emerald-100'
+                        }`}>
                           <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg ${isAbnormal(item.data.value, item.data.timing) ? 'bg-white text-rose-500 shadow-sm' : 'bg-white text-emerald-500 shadow-sm'}`}>
+                            <div className={`p-1.5 rounded-lg ${
+                              getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                                ? 'bg-white text-rose-500 shadow-sm'
+                                : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                                  ? 'bg-white text-sky-500 shadow-sm'
+                                  : 'bg-white text-emerald-500 shadow-sm'
+                            }`}>
                               {isAbnormal(item.data.value, item.data.timing) ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
                             </div>
                             <div>
-                              <p className={`text-lg font-bold flex items-baseline gap-1 ${isAbnormal(item.data.value, item.data.timing) ? 'text-rose-600' : 'text-emerald-600'}`}>
+                              <p className={`text-lg font-bold flex items-baseline gap-1 ${
+                                getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                                  ? 'text-rose-600'
+                                  : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                                    ? 'text-sky-600'
+                                    : 'text-emerald-600'
+                              }`}>
                                 {item.data.value} 
                                 <span className="text-[9px] uppercase font-bold text-slate-400">{item.data.timing}</span>
                               </p>
@@ -400,8 +438,11 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                               )}
                             </div>
                           </div>
-                          {isAbnormal(item.data.value, item.data.timing) && (
-                            <span className="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">异常</span>
+                          {getGlucoseStatus(item.data.value, item.data.timing) === 'high' && (
+                            <span className="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏高</span>
+                          )}
+                          {getGlucoseStatus(item.data.value, item.data.timing) === 'low' && (
+                            <span className="bg-sky-500 text-white text-[8px] px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">偏低</span>
                           )}
                         </div>
                       )}
@@ -441,9 +482,10 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}
                   />
-                  <ReferenceLine y={5.1} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '5.1', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
-                  <ReferenceLine y={10.0} stroke="#f43f5e" strokeDasharray="3 3" label={{ position: 'right', value: '10.0', fill: '#f43f5e', fontSize: 10, fontWeight: 'bold' }} />
-                  <ReferenceLine y={8.5} stroke="#f43f5e" strokeDasharray="3 3" label={{ position: 'right', value: '8.5', fill: '#f43f5e', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={3.3} stroke="#0ea5e9" strokeDasharray="3 3" label={{ position: 'right', value: '3.3', fill: '#0ea5e9', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={5.3} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '5.3', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={6.7} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '6.7', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={7.8} stroke="#f43f5e" strokeDasharray="3 3" label={{ position: 'right', value: '7.8', fill: '#f43f5e', fontSize: 10, fontWeight: 'bold' }} />
                   <Line 
                     type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={4} 
                     dot={{ r: 4, fill: '#f43f5e', strokeWidth: 2, stroke: '#fff' }}

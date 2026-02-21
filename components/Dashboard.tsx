@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   labelStyle={{ fontWeight: 'bold' }}
                 />
-                <ReferenceArea y1={4.0} y2={6.7} fill="#10b981" fillOpacity={0.05} />
+                <ReferenceArea y1={3.3} y2={6.7} fill="#10b981" fillOpacity={0.05} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 

@@ -22,13 +22,33 @@ interface DailyReportProps {
 const DailyReport: React.FC<DailyReportProps> = ({ glucoseLogs, mealLogs, onBack }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const isAbnormal = (val: number, time: any) => {
-    if (time === GlucoseTiming.FASTING) return val >= 5.1;
-    if (time === GlucoseTiming.POST_MEAL_1H) return val >= 10.0;
-    if (time === GlucoseTiming.POST_MEAL_2H) return val >= 8.5;
-    if (time === GlucoseTiming.BEFORE_SLEEP) return val >= 8.5;
-    return false;
+  const getGlucoseStatus = (val: number, time: GlucoseTiming): 'normal' | 'low' | 'high' => {
+    if (time === GlucoseTiming.FASTING) {
+      if (val < 3.3) return 'low';
+      if (val > 5.3) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.POST_MEAL_1H) {
+      if (val > 7.8) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.POST_MEAL_2H) {
+      if (val < 4.4) return 'low';
+      if (val > 6.7) return 'high';
+      return 'normal';
+    }
+
+    if (time === GlucoseTiming.BEFORE_SLEEP) {
+      if (val > 8.5) return 'high';
+      return 'normal';
+    }
+
+    return 'normal';
   };
+
+  const isAbnormal = (val: number, time: GlucoseTiming) => getGlucoseStatus(val, time) !== 'normal';
 
   // 聚合并按时间排序当天的所有记录
   const dailyTimeline = useMemo(() => {
@@ -104,19 +124,40 @@ const DailyReport: React.FC<DailyReportProps> = ({ glucoseLogs, mealLogs, onBack
                   </div>
                 </div>
               ) : (
-                <div className={`p-4 rounded-3xl border shadow-sm flex items-center justify-between ${isAbnormal(item.data.value, item.data.timing) ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                <div className={`p-4 rounded-3xl border shadow-sm flex items-center justify-between ${
+                  getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                    ? 'bg-rose-50 border-rose-100'
+                    : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                      ? 'bg-sky-50 border-sky-100'
+                      : 'bg-emerald-50 border-emerald-100'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl ${isAbnormal(item.data.value, item.data.timing) ? 'bg-white text-rose-500' : 'bg-white text-emerald-500'}`}>
+                    <div className={`p-2 rounded-xl ${
+                      getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                        ? 'bg-white text-rose-500'
+                        : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                          ? 'bg-white text-sky-500'
+                          : 'bg-white text-emerald-500'
+                    }`}>
                       {isAbnormal(item.data.value, item.data.timing) ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
                     </div>
                     <div>
-                      <p className={`text-xl font-bold ${isAbnormal(item.data.value, item.data.timing) ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      <p className={`text-xl font-bold ${
+                        getGlucoseStatus(item.data.value, item.data.timing) === 'high'
+                          ? 'text-rose-600'
+                          : getGlucoseStatus(item.data.value, item.data.timing) === 'low'
+                            ? 'text-sky-600'
+                            : 'text-emerald-600'
+                      }`}>
                         {item.data.value} <span className="text-[10px] uppercase">{item.data.timing}</span>
                       </p>
                     </div>
                   </div>
-                  {isAbnormal(item.data.value, item.data.timing) && (
-                    <span className="bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">异常</span>
+                  {getGlucoseStatus(item.data.value, item.data.timing) === 'high' && (
+                    <span className="bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">偏高</span>
+                  )}
+                  {getGlucoseStatus(item.data.value, item.data.timing) === 'low' && (
+                    <span className="bg-sky-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">偏低</span>
                   )}
                 </div>
               )}
