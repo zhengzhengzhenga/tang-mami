@@ -1,11 +1,21 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { MealType } from "../types";
 
-// Fix: Use process.env.API_KEY directly for initialization as per guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = (import.meta.env.VITE_GEMINI_API_KEY ?? "") as string;
+
+let ai: GoogleGenAI | null = null;
+function getAi(): GoogleGenAI {
+  if (!ai) {
+    if (!apiKey || apiKey === "your-gemini-api-key") {
+      throw new Error("请配置 GEMINI_API_KEY 或 VITE_GEMINI_API_KEY 以使用 AI 功能");
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 export const analyzeMeal = async (description: string, imageBase64?: string) => {
+  const client = getAi();
   const model = 'gemini-3-flash-preview';
   
   const prompt = `分析这份针对妊娠期糖尿病（GDM）孕妇的餐食。
@@ -22,7 +32,7 @@ export const analyzeMeal = async (description: string, imageBase64?: string) => 
     });
   }
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model,
     contents,
     config: {
@@ -46,9 +56,10 @@ export const analyzeMeal = async (description: string, imageBase64?: string) => 
 };
 
 export const getHealthAdvisorResponse = async (query: string, history: any[]) => {
+  const client = getAi();
   const model = 'gemini-3-pro-preview';
   
-  const chat = ai.chats.create({
+  const chat = client.chats.create({
     model,
     config: {
       systemInstruction: "你是一位专业的妊娠期糖尿病（GDM）健康助手。你的目标是为怀孕的妈妈们提供关于饮食、运动和血糖控制的支持性和科学性建议。回答要积极鼓励且简明扼要，并始终提醒用户咨询医生进行临床决策。",
