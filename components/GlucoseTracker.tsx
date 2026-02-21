@@ -47,6 +47,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
   const [editingLogTime, setEditingLogTime] = useState<Date | null>(null);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [showPointLabels, setShowPointLabels] = useState(false);
+  const [showTimingLabels, setShowTimingLabels] = useState(false);
   
   // 当前在日历视图下查看详情的日期
   const [focusedDateStr, setFocusedDateStr] = useState(new Date().toISOString().split('T')[0]);
@@ -553,6 +554,13 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
             >
               {showPointLabels ? '隐藏数值' : '显示数值'}
             </button>
+            <button
+              type="button"
+              onClick={() => setShowTimingLabels(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${showTimingLabels ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-white text-slate-500 border-slate-200'}`}
+            >
+              {showTimingLabels ? '隐藏时间点' : '显示时间点'}
+            </button>
           </div>
 
           <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm h-80">
@@ -582,25 +590,28 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDateTime || ''}
                     formatter={(value: number) => [`${value} mmol/L`, '血糖']}
                   />
-                  <ReferenceLine y={3.3} stroke="#0ea5e9" strokeDasharray="3 3" label={{ position: 'right', value: '3.3', fill: '#0ea5e9', fontSize: 10, fontWeight: 'bold' }} />
-                  <ReferenceLine y={5.3} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '5.3', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
-                  <ReferenceLine y={6.7} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '6.7', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
-                  <ReferenceLine y={7.8} stroke="#f43f5e" strokeDasharray="3 3" label={{ position: 'right', value: '7.8', fill: '#f43f5e', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={3.3} stroke="#38bdf8" strokeDasharray="3 3" label={{ position: 'right', value: '3.3', fill: '#38bdf8', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={5.3} stroke="#14b8a6" strokeDasharray="3 3" label={{ position: 'right', value: '5.3', fill: '#14b8a6', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={6.7} stroke="#14b8a6" strokeDasharray="3 3" label={{ position: 'right', value: '6.7', fill: '#14b8a6', fontSize: 10, fontWeight: 'bold' }} />
+                  <ReferenceLine y={7.8} stroke="#f59e0b" strokeDasharray="3 3" label={{ position: 'right', value: '7.8', fill: '#f59e0b', fontSize: 10, fontWeight: 'bold' }} />
                   <Line 
-                    type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={4} 
+                    type="monotone" dataKey="value" stroke="#0f766e" strokeWidth={4} 
                     dot={(props: any) => {
                       const status = getGlucoseStatus(props.payload.value, props.payload.timing);
-                      const fill = status === 'high' ? '#f43f5e' : status === 'low' ? '#0ea5e9' : '#10b981';
+                      const fill = status === 'high' ? '#f59e0b' : status === 'low' ? '#38bdf8' : '#14b8a6';
                       return <circle cx={props.cx} cy={props.cy} r={4} fill={fill} stroke="#fff" strokeWidth={2} />;
                     }}
                     activeDot={(props: any) => {
                       const status = getGlucoseStatus(props.payload.value, props.payload.timing);
-                      const fill = status === 'high' ? '#f43f5e' : status === 'low' ? '#0ea5e9' : '#10b981';
+                      const fill = status === 'high' ? '#f59e0b' : status === 'low' ? '#38bdf8' : '#14b8a6';
                       return <circle cx={props.cx} cy={props.cy} r={6} fill={fill} stroke="#fff" strokeWidth={2} />;
                     }}
                   >
                     {showPointLabels && (
-                      <LabelList dataKey="value" position="top" fill="#e11d48" fontSize={10} fontWeight={700} />
+                      <LabelList dataKey="value" position="top" fill="#0f766e" fontSize={10} fontWeight={700} />
+                    )}
+                    {showTimingLabels && (
+                      <LabelList dataKey="timing" position="bottom" fill="#64748b" fontSize={9} fontWeight={600} />
                     )}
                   </Line>
                 </LineChart>
