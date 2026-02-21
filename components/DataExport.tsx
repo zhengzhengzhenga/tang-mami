@@ -7,11 +7,8 @@ import {
   FileSpreadsheet, 
   CheckCircle2,
   Info,
-  Clock,
   ArrowRight,
-  // Added missing icons
-  Droplets,
-  Utensils
+  Droplets
 } from 'lucide-react';
 import { GlucoseLog, MealLog } from '../types';
 
@@ -54,34 +51,38 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
     // 构建 CSV 内容
     // 包含 UTF-8 BOM，让 Excel 能正确识别中文
     let csvContent = "\uFEFF";
-    csvContent += "日期,时间,类型,项目/数值,详细内容/测量时点,单位/关联餐次\n";
+    csvContent += "日期,时间,血糖值(mmol/L),测量时点,对应餐食类型,对应餐食内容,对应餐食营养\n";
 
-    // 混合并排序所有记录
-    const combined = [
-      ...filteredData.glucose.map(g => ({
-        date: new Date(g.timestamp).toLocaleDateString(),
-        time: new Date(g.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: "血糖",
-        value: g.value,
-        detail: g.timing,
-        extra: g.mealType || ""
-      })),
-      ...filteredData.meals.map(m => ({
-        date: new Date(m.timestamp).toLocaleDateString(),
-        time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: "饮食",
-        value: m.description,
-        detail: m.type,
-        extra: m.nutrients ? `碳水:${m.nutrients.carbs}g` : ""
-      }))
-    ].sort((a, b) => {
-      const dateA = new Date(`${a.date} ${a.time}`).getTime();
-      const dateB = new Date(`${b.date} ${b.time}`).getTime();
-      return dateA - dateB;
-    });
+    const glucoseRows = [...filteredData.glucose]
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .map(g => {
+        const linkedMeal = g.associatedMealId
+          ? mealLogs.find(m => m.id === g.associatedMealId)
+          : undefined;
 
-    combined.forEach(row => {
-      csvContent += `${row.date},${row.time},${row.type},${row.value},${row.detail},${row.extra}\n`;
+        const mealType = linkedMeal?.type || g.mealType || '';
+        const userMealDescription = linkedMeal?.description?.trim();
+        const itemDescription = linkedMeal?.items?.map(i => `${i.name}${i.weight ? `(${i.weight}g)` : ''}`).join('、') || '';
+        const mealDesc = linkedMeal
+          ? (userMealDescription && userMealDescription !== '餐食记录' ? userMealDescription : itemDescription)
+          : '';
+        const mealNutrition = linkedMeal?.nutrients
+          ? `碳水:${linkedMeal.nutrients.carbs}g; 热量:${linkedMeal.nutrients.calories}kcal; 蛋白质:${linkedMeal.nutrients.protein}g; 脂肪:${linkedMeal.nutrients.fats}g`
+          : '';
+
+        return {
+          date: new Date(g.timestamp).toLocaleDateString(),
+          time: new Date(g.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          value: g.value,
+          timing: g.timing,
+          mealType,
+          mealDesc,
+          mealNutrition,
+        };
+      });
+
+    glucoseRows.forEach(row => {
+      csvContent += `${row.date},${row.time},${row.value},${row.timing},${row.mealType},${row.mealDesc},${row.mealNutrition}\n`;
     });
 
     // 创建下载
@@ -147,25 +148,19 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
 
       <section className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
         <h3 className="text-sm font-bold text-slate-700 mb-4 px-1">即将导出的内容清单</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
             <p className="text-[10px] font-bold text-rose-500 uppercase mb-1 flex items-center gap-1">
-              <Droplets size={12} /> 血糖记录
+              <Droplets size={12} /> 血糖记录（含对应餐食内容）
             </p>
             <h4 className="text-2xl font-bold text-rose-700">{filteredData.glucose.length} <span className="text-[10px] font-medium">条</span></h4>
-          </div>
-          <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-            <p className="text-[10px] font-bold text-amber-500 uppercase mb-1 flex items-center gap-1">
-              <Utensils size={12} /> 饮食记录
-            </p>
-            <h4 className="text-2xl font-bold text-amber-700">{filteredData.meals.length} <span className="text-[10px] font-medium">条</span></h4>
           </div>
         </div>
       </section>
 
       <button 
         onClick={handleExport}
-        disabled={isExporting || (filteredData.glucose.length === 0 && filteredData.meals.length === 0)}
+        disabled={isExporting || filteredData.glucose.length === 0}
         className="w-full py-5 bg-emerald-500 text-white rounded-3xl font-bold shadow-lg shadow-emerald-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
       >
         {isExporting ? (
@@ -178,7 +173,7 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
       <div className="p-4 bg-slate-100 rounded-2xl flex items-start gap-3">
         <Info size={16} className="text-slate-400 mt-0.5 flex-shrink-0" />
         <p className="text-[10px] text-slate-500 leading-relaxed">
-          导出的文件包含完整的日期、时间、血糖数值（含测量时点）以及饮食内容。您可以将其发送给产科医生或营养师，作为临床复诊的重要参考资料。
+          导出的文件仅包含血糖记录，并在每条血糖记录中附带其对应的餐食类型、内容和营养信息（若有关联）。您可以将其发送给产科医生或营养师，作为临床复诊的重要参考资料。
         </p>
       </div>
     </div>
