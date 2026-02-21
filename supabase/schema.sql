@@ -1,4 +1,4 @@
--- 甜护宝 Supabase 数据库 Schema
+-- 甜心孕记 Supabase 数据库 Schema
 -- 在 Supabase Dashboard -> SQL Editor 中执行此脚本
 --
 -- 认证配置说明（Supabase Dashboard -> Authentication -> Providers -> Email）：

@@ -209,7 +209,7 @@ const MainApp: React.FC = () => {
       <header className="p-6 bg-white border-b sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">甜护宝</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">甜心孕记</h1>
             <p className="text-sm text-slate-500">妊娠期健康伴侣</p>
           </div>
           <button

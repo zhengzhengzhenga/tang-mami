@@ -23,7 +23,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  ReferenceLine
+  ReferenceLine,
+  LabelList
 } from 'recharts';
 
 interface GlucoseTrackerProps {
@@ -40,6 +41,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
   const [view, setView] = useState<TabType>('history');
   const [showAdd, setShowAdd] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('week');
+  const [showPointLabels, setShowPointLabels] = useState(false);
   
   // 当前在日历视图下查看详情的日期
   const [focusedDateStr, setFocusedDateStr] = useState(new Date().toISOString().split('T')[0]);
@@ -184,7 +186,16 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
       .filter(l => new Date(l.timestamp) >= cutoff)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
       .map(l => ({
-        time: new Date(l.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        axisLabel: period === 'day'
+          ? new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : new Date(l.timestamp).toLocaleDateString([], { month: 'numeric', day: 'numeric' }),
+        fullDateTime: new Date(l.timestamp).toLocaleString([], {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
         value: l.value,
         timing: l.timing
       }));
@@ -460,15 +471,24 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-center bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
-            {(['day', 'week', 'month'] as const).map(p => (
-              <button 
-                key={p} onClick={() => setPeriod(p)}
-                className={`px-6 py-1.5 rounded-xl text-xs font-bold transition-all ${period === p ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-400'}`}
-              >
-                {p === 'day' ? '今日' : p === 'week' ? '本周' : '本月'}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="flex justify-center bg-slate-100 p-1 rounded-2xl w-fit">
+              {(['day', 'week', 'month'] as const).map(p => (
+                <button 
+                  key={p} onClick={() => setPeriod(p)}
+                  className={`px-6 py-1.5 rounded-xl text-xs font-bold transition-all ${period === p ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-400'}`}
+                >
+                  {p === 'day' ? '今日' : p === 'week' ? '本周' : '本月'}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPointLabels(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${showPointLabels ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-white text-slate-500 border-slate-200'}`}
+            >
+              {showPointLabels ? '隐藏数值' : '显示数值'}
+            </button>
           </div>
 
           <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm h-80">
@@ -476,11 +496,27 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={filteredChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="time" hide />
-                  <YAxis domain={[3, 11]} fontSize={10} axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="axisLabel"
+                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                    minTickGap={18}
+                  />
+                  <YAxis
+                    domain={[3, 11]}
+                    fontSize={10}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8' }}
+                    label={{ value: 'mmol/L', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
+                  />
                   <Tooltip 
                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     labelStyle={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDateTime || ''}
+                    formatter={(value: number) => [`${value} mmol/L`, '血糖']}
                   />
                   <ReferenceLine y={3.3} stroke="#0ea5e9" strokeDasharray="3 3" label={{ position: 'right', value: '3.3', fill: '#0ea5e9', fontSize: 10, fontWeight: 'bold' }} />
                   <ReferenceLine y={5.3} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: '5.3', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
@@ -488,9 +524,21 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
                   <ReferenceLine y={7.8} stroke="#f43f5e" strokeDasharray="3 3" label={{ position: 'right', value: '7.8', fill: '#f43f5e', fontSize: 10, fontWeight: 'bold' }} />
                   <Line 
                     type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={4} 
-                    dot={{ r: 4, fill: '#f43f5e', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6 }} 
-                  />
+                    dot={(props: any) => {
+                      const status = getGlucoseStatus(props.payload.value, props.payload.timing);
+                      const fill = status === 'high' ? '#f43f5e' : status === 'low' ? '#0ea5e9' : '#10b981';
+                      return <circle cx={props.cx} cy={props.cy} r={4} fill={fill} stroke="#fff" strokeWidth={2} />;
+                    }}
+                    activeDot={(props: any) => {
+                      const status = getGlucoseStatus(props.payload.value, props.payload.timing);
+                      const fill = status === 'high' ? '#f43f5e' : status === 'low' ? '#0ea5e9' : '#10b981';
+                      return <circle cx={props.cx} cy={props.cy} r={6} fill={fill} stroke="#fff" strokeWidth={2} />;
+                    }}
+                  >
+                    {showPointLabels && (
+                      <LabelList dataKey="value" position="top" fill="#e11d48" fontSize={10} fontWeight={700} />
+                    )}
+                  </Line>
                 </LineChart>
               </ResponsiveContainer>
             ) : (

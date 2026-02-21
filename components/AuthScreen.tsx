@@ -39,7 +39,7 @@ const AuthScreen: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-rose-50 to-slate-50 max-w-md mx-auto">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">甜护宝</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">甜心孕记</h1>
           <p className="text-sm text-slate-500 mt-1">妊娠期健康伴侣</p>
         </div>
 

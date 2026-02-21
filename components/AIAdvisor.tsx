@@ -9,7 +9,7 @@ interface AIAdvisorProps {
 
 const AIAdvisor: React.FC<AIAdvisorProps> = ({ onBack }) => {
   const [messages, setMessages] = useState<{ role: 'user' | 'bot', text: string }[]>([
-    { role: 'bot', text: "您好！我是您的甜护宝助手。今天有什么关于血糖管理的问题想咨询我吗？" }
+    { role: 'bot', text: "您好！我是您的甜心孕记助手。今天有什么关于血糖管理的问题想咨询我吗？" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
