@@ -195,7 +195,9 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onDeleteLog, on
                   </button>
                 </div>
                 {log.photoUrl && (
-                  <img src={log.photoUrl} alt="Meal" className="w-full h-32 object-cover opacity-90" />
+                  <div className="w-full h-48 bg-slate-50 flex items-center justify-center">
+                    <img src={log.photoUrl} alt="Meal" className="w-full h-full object-contain" />
+                  </div>
                 )}
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
@@ -349,8 +351,8 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onDeleteLog, on
                   type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload}
                 />
                 {imagePreview ? (
-                  <div className="relative h-40 w-full rounded-2xl overflow-hidden shadow-inner border border-slate-200">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="relative h-48 w-full rounded-2xl overflow-hidden shadow-inner border border-slate-200 bg-slate-50">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
                     <button 
                       onClick={() => setImagePreview(null)}
                       className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full backdrop-blur-md"
