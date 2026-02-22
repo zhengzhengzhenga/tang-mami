@@ -26,6 +26,40 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
   const [endDate, setEndDate] = useState(today);
   const [isExporting, setIsExporting] = useState(false);
 
+  const getGlucoseStatus = (val: number, timing: GlucoseLog['timing']): 'normal' | 'low' | 'high' => {
+    if (timing === '空腹') {
+      if (val < 3.3) return 'low';
+      if (val > 5.3) return 'high';
+      return 'normal';
+    }
+
+    if (timing === '餐后1小时') {
+      if (val > 7.8) return 'high';
+      return 'normal';
+    }
+
+    if (timing === '餐后2小时') {
+      if (val < 4.4) return 'low';
+      if (val > 6.7) return 'high';
+      return 'normal';
+    }
+
+    if (timing === '睡前') {
+      if (val > 8.5) return 'high';
+      return 'normal';
+    }
+
+    return 'normal';
+  };
+
+  const escapeHtml = (value: string | number) =>
+    String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const filteredData = useMemo(() => {
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
@@ -47,11 +81,9 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
 
   const handleExport = () => {
     setIsExporting(true);
-    
-    // 构建 CSV 内容
-    // 包含 UTF-8 BOM，让 Excel 能正确识别中文
-    let csvContent = "\uFEFF";
-    csvContent += "日期,时间,血糖值(mmol/L),测量时点,对应餐食类型,对应餐食内容,对应餐食营养\n";
+
+    // 构建 HTML 表格内容（以 .xls 导出，支持样式）
+    let tableRows = '';
 
     const glucoseRows = [...filteredData.glucose]
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
@@ -70,6 +102,8 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
           ? `碳水:${linkedMeal.nutrients.carbs}g; 热量:${linkedMeal.nutrients.calories}kcal; 蛋白质:${linkedMeal.nutrients.protein}g; 脂肪:${linkedMeal.nutrients.fats}g`
           : '';
 
+        const status = getGlucoseStatus(g.value, g.timing);
+
         return {
           date: new Date(g.timestamp).toLocaleDateString(),
           time: new Date(g.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -78,19 +112,64 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
           mealType,
           mealDesc,
           mealNutrition,
+          isAbnormal: status !== 'normal',
         };
       });
 
     glucoseRows.forEach(row => {
-      csvContent += `${row.date},${row.time},${row.value},${row.timing},${row.mealType},${row.mealDesc},${row.mealNutrition}\n`;
+      const glucoseCellStyle = row.isAbnormal
+        ? 'font-weight:700;color:#dc2626;'
+        : '';
+      tableRows += `
+        <tr>
+          <td>${escapeHtml(row.date)}</td>
+          <td>${escapeHtml(row.time)}</td>
+          <td style="${glucoseCellStyle}">${escapeHtml(row.value)}</td>
+          <td>${escapeHtml(row.timing)}</td>
+          <td>${escapeHtml(row.mealType)}</td>
+          <td>${escapeHtml(row.mealDesc)}</td>
+          <td>${escapeHtml(row.mealNutrition)}</td>
+        </tr>
+      `;
     });
 
+    const htmlContent = `
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          table { border-collapse: collapse; width: 100%; font-family: 'Microsoft YaHei', Arial, sans-serif; }
+          th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; text-align: left; }
+          th { background: #f8fafc; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>时间</th>
+              <th>血糖值(mmol/L)</th>
+              <th>测量时点</th>
+              <th>对应餐食类型</th>
+              <th>对应餐食内容</th>
+              <th>对应餐食营养</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
     // 创建下载
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["\uFEFF", htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `甜心孕记健康报告_${startDate}_至_${endDate}.csv`);
+    link.setAttribute("download", `甜心孕记健康报告_${startDate}_至_${endDate}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -113,7 +192,7 @@ const DataExport: React.FC<DataExportProps> = ({ glucoseLogs, mealLogs, onBack }
           <FileSpreadsheet size={24} />
           <div>
             <h3 className="font-bold text-sm">选择导出范围</h3>
-            <p className="text-[10px] opacity-80">导出文件格式为 .csv (Excel可打开)</p>
+            <p className="text-[10px] opacity-80">导出文件格式为 .xls (Excel可打开，异常值高亮)</p>
           </div>
         </div>
 
