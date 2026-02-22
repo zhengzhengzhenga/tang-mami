@@ -21,10 +21,6 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLogs, weightLogs, onNavigate }) => {
   const latestGlucose = glucoseLogs[0];
   const latestWeight = weightLogs[0];
-  const totalCarbsToday = mealLogs.filter(m => {
-    const d = new Date(m.timestamp);
-    return d.toDateString() === new Date().toDateString();
-  }).reduce((acc, curr) => acc + (curr.nutrients?.carbs || 0), 0);
   
   const chartData = [...glucoseLogs]
     .filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString())
@@ -36,28 +32,18 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 gap-4">
-        <div className="bg-rose-500 p-4 rounded-3xl text-white shadow-lg shadow-rose-200">
+      <section className="grid grid-cols-2 gap-3">
+        <div className="bg-rose-500 p-4 rounded-3xl text-white shadow-lg shadow-rose-200 min-h-[120px]">
           <p className="text-xs opacity-80 mb-1">最新血糖</p>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-bold">{latestGlucose?.value || '--'}</span>
             <span className="text-xs">{latestGlucose?.unit || 'mmol/L'}</span>
           </div>
-          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block">
+          <p className="text-[10px] mt-3 bg-white/20 px-2 py-0.5 rounded-full inline-block">
             {latestGlucose?.timing || '暂无数据'}
           </p>
         </div>
-        <div className="bg-emerald-500 p-4 rounded-3xl text-white shadow-lg shadow-emerald-200">
-          <p className="text-xs opacity-80 mb-1">今日碳水</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold">{totalCarbsToday}</span>
-            <span className="text-xs">g</span>
-          </div>
-          <p className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-block">
-            目标: ~150g
-          </p>
-        </div>
-        <div className="bg-indigo-500 p-4 rounded-3xl text-white shadow-lg shadow-indigo-200 col-span-2">
+        <div className="bg-indigo-500 p-4 rounded-3xl text-white shadow-lg shadow-indigo-200 min-h-[120px] flex flex-col">
           <p className="text-xs opacity-80 mb-1">最新体重</p>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-bold">{latestWeight?.weight || '--'}</span>
@@ -65,7 +51,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
           </div>
           <button
             onClick={() => onNavigate('weight')}
-            className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+            className="text-[10px] mt-auto bg-white/20 px-2 py-0.5 rounded-full inline-flex items-center gap-1 self-start"
           >
             <Scale size={11} /> 记录体重
           </button>
@@ -105,7 +91,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   labelStyle={{ fontWeight: 'bold' }}
                 />
-                <ReferenceArea y1={3.3} y2={6.7} stroke="#10b981" strokeOpacity={0.25} />
+                <ReferenceArea y1={3.3} y2={6.7} fill="#10b981" fillOpacity={0.12} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 

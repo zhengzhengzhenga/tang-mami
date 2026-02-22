@@ -313,12 +313,6 @@ const MainApp: React.FC = () => {
           label="首页"
         />
         <NavButton
-          active={currentView === 'planner'}
-          onClick={() => setCurrentView('planner')}
-          icon={<ChefHat size={20} />}
-          label="配餐"
-        />
-        <NavButton
           active={currentView === 'glucose'}
           onClick={() => setCurrentView('glucose')}
           icon={<Droplets size={20} />}
@@ -335,6 +329,12 @@ const MainApp: React.FC = () => {
           onClick={() => setCurrentView('weight')}
           icon={<Scale size={20} />}
           label="体重"
+        />
+        <NavButton
+          active={currentView === 'planner'}
+          onClick={() => setCurrentView('planner')}
+          icon={<ChefHat size={20} />}
+          label="配餐"
         />
         <NavButton
           active={currentView === 'export'}

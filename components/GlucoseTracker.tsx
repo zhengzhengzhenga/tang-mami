@@ -38,7 +38,16 @@ interface GlucoseTrackerProps {
 }
 
 type TabType = 'history' | 'trend';
-type PeriodType = 'day' | 'week' | 'month';
+type PeriodType = 'day' | 'week' | 'month' | 'custom';
+
+const toDateTimeLocalString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 
 const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLog, onDeleteLog, onBack }) => {
   const [view, setView] = useState<TabType>('history');
@@ -46,6 +55,12 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingLogTime, setEditingLogTime] = useState<Date | null>(null);
   const [period, setPeriod] = useState<PeriodType>('week');
+  const [customStart, setCustomStart] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() - 6, 0, 0, 0);
+    return toDateTimeLocalString(d);
+  });
+  const [customEnd, setCustomEnd] = useState(() => toDateTimeLocalString(new Date()));
   const [showPointLabels, setShowPointLabels] = useState(false);
   const [showTimingLabels, setShowTimingLabels] = useState(false);
   
@@ -205,15 +220,31 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
   const filteredChartData = useMemo(() => {
     const now = new Date();
     let cutoff = new Date();
+    let customStartDate: Date | null = null;
+    let customEndDate: Date | null = null;
     if (period === 'day') cutoff.setHours(0, 0, 0, 0);
     else if (period === 'week') cutoff.setDate(now.getDate() - 7);
     else if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
+    else {
+      customStartDate = customStart ? new Date(customStart) : null;
+      customEndDate = customEnd ? new Date(customEnd) : null;
+    }
+
+    const isSameCustomDate =
+      customStartDate && customEndDate &&
+      customStartDate.toDateString() === customEndDate.toDateString();
 
     return [...logs]
-      .filter(l => new Date(l.timestamp) >= cutoff)
+      .filter(l => {
+        const ts = new Date(l.timestamp);
+        if (period !== 'custom') return ts >= cutoff;
+        if (!customStartDate || Number.isNaN(customStartDate.getTime())) return false;
+        if (!customEndDate || Number.isNaN(customEndDate.getTime())) return false;
+        return ts >= customStartDate && ts <= customEndDate;
+      })
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
       .map(l => ({
-        axisLabel: period === 'day'
+        axisLabel: period === 'day' || (period === 'custom' && isSameCustomDate)
           ? new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : new Date(l.timestamp).toLocaleDateString([], { month: 'numeric', day: 'numeric' }),
         fullDateTime: new Date(l.timestamp).toLocaleString([], {
@@ -226,7 +257,7 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
         value: l.value,
         timing: l.timing
       }));
-  }, [logs, period]);
+  }, [logs, period, customStart, customEnd]);
 
   const changeMonth = (offset: number) => {
     setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() + offset)));
@@ -538,12 +569,12 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-center gap-2">
             <div className="flex justify-center bg-slate-100 p-1 rounded-2xl w-fit">
-              {(['day', 'week', 'month'] as const).map(p => (
+              {(['day', 'week', 'month', 'custom'] as const).map(p => (
                 <button 
                   key={p} onClick={() => setPeriod(p)}
                   className={`px-6 py-1.5 rounded-xl text-xs font-bold transition-all ${period === p ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-400'}`}
                 >
-                  {p === 'day' ? '今日' : p === 'week' ? '本周' : '本月'}
+                  {p === 'day' ? '今日' : p === 'week' ? '本周' : p === 'month' ? '本月' : '自定义'}
                 </button>
               ))}
             </div>
@@ -562,6 +593,25 @@ const GlucoseTracker: React.FC<GlucoseTrackerProps> = ({ logs, mealLogs, onAddLo
               {showTimingLabels ? '隐藏时间点' : '显示时间点'}
             </button>
           </div>
+
+          {period === 'custom' && (
+            <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm grid grid-cols-1 gap-2">
+              <label className="text-[11px] font-bold text-slate-500">开始时间</label>
+              <input
+                type="datetime-local"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700"
+              />
+              <label className="text-[11px] font-bold text-slate-500 mt-1">结束时间</label>
+              <input
+                type="datetime-local"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700"
+              />
+            </div>
+          )}
 
           <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm h-80">
             {filteredChartData.length > 0 ? (

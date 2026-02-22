@@ -222,20 +222,6 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onDeleteLog, on
                     </div>
                   )}
 
-                  <div className="flex gap-4 mt-3 pt-3 border-t border-slate-50">
-                    <div className="text-center">
-                      <p className="text-[9px] text-slate-400 font-bold uppercase">碳水</p>
-                      <p className="font-bold text-rose-500 text-xs">{log.nutrients?.carbs || '--'}g</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-slate-400 font-bold uppercase">热量</p>
-                      <p className="font-bold text-slate-700 text-xs">{log.nutrients?.calories || '--'}kcal</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-slate-400 font-bold uppercase">蛋白质</p>
-                      <p className="font-bold text-emerald-500 text-xs">{log.nutrients?.protein || '--'}g</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             )) : (
