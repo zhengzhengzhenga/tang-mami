@@ -29,6 +29,7 @@ import {
   upsertGlucoseLog,
   deleteGlucoseLog,
   upsertMealLog,
+  deleteMealLog,
   upsertWeightLog,
 } from './services/supabaseDataService';
 
@@ -130,12 +131,29 @@ const MainApp: React.FC = () => {
     (log: MealLog) => {
       setMealLogs((prev) => {
         const exists = prev.find((l) => l.id === log.id);
-        if (exists) return prev.map((l) => (l.id === log.id ? log : l));
-        return [log, ...prev];
+        if (exists) {
+          return prev
+            .map((l) => (l.id === log.id ? log : l))
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        return [log, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       });
       syncMeal(log);
     },
     [syncMeal]
+  );
+
+  const handleDeleteMeal = useCallback(
+    async (id: string) => {
+      setMealLogs((prev) => prev.filter((l) => l.id !== id));
+      if (!userId) return;
+      try {
+        await deleteMealLog(id, userId);
+      } catch (err) {
+        console.error('Delete meal failed:', err);
+      }
+    },
+    [userId]
   );
 
   const handleAddWeight = useCallback(
@@ -186,6 +204,7 @@ const MainApp: React.FC = () => {
           <MealLogger
             logs={mealLogs}
             onAddLog={handleAddMeal}
+            onDeleteLog={handleDeleteMeal}
             onBack={() => setCurrentView('dashboard')}
           />
         );

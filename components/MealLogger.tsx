@@ -16,10 +16,11 @@ import { MealLog, MealType, FoodCategory, FoodItem } from '../types';
 interface MealLoggerProps {
   logs: MealLog[];
   onAddLog: (log: MealLog) => void;
+  onDeleteLog: (id: string) => void;
   onBack: () => void;
 }
 
-const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
+const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onDeleteLog, onBack }) => {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -175,12 +176,24 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
           <div className="space-y-4">
             {logs.length > 0 ? logs.map(log => (
               <div key={log.id} className="bg-white overflow-hidden rounded-3xl border border-slate-100 shadow-sm relative group">
-                <button 
-                  onClick={() => openForm(log)}
-                  className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                >
-                  <Edit3 size={16} />
-                </button>
+                <div className="absolute top-3 right-3 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => openForm(log)}
+                    className="p-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm text-slate-400"
+                  >
+                    <Edit3 size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('确认删除这条饮食记录吗？')) {
+                        onDeleteLog(log.id);
+                      }
+                    }}
+                    className="p-2 bg-rose-50/90 backdrop-blur-md rounded-full shadow-sm text-rose-500"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 {log.photoUrl && (
                   <img src={log.photoUrl} alt="Meal" className="w-full h-32 object-cover opacity-90" />
                 )}
