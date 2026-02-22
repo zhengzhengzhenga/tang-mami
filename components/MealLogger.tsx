@@ -33,6 +33,45 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const historicalFoodNamesByCategory = useMemo<Record<FoodCategory, string[]>>(() => {
+    const result: Record<FoodCategory, string[]> = {
+      [FoodCategory.STAPLE]: [],
+      [FoodCategory.PROTEIN]: [],
+      [FoodCategory.VEGETABLE]: [],
+      [FoodCategory.OTHER]: []
+    };
+    const seenByCategory: Record<FoodCategory, Set<string>> = {
+      [FoodCategory.STAPLE]: new Set<string>(),
+      [FoodCategory.PROTEIN]: new Set<string>(),
+      [FoodCategory.VEGETABLE]: new Set<string>(),
+      [FoodCategory.OTHER]: new Set<string>()
+    };
+
+    [...logs]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .forEach(log => {
+        (log.items || []).forEach(item => {
+          const name = item.name?.trim();
+          if (!name) return;
+          const category = item.category || FoodCategory.OTHER;
+          if (seenByCategory[category].has(name)) return;
+          seenByCategory[category].add(name);
+          result[category].push(name);
+        });
+      });
+
+    return result;
+  }, [logs]);
+
+  const getHistoryFoodSuggestions = (category: FoodCategory, keyword: string) => {
+    const candidates = historicalFoodNamesByCategory[category] || [];
+    const normalized = keyword.trim().toLowerCase();
+    if (!normalized) return candidates.slice(0, 5);
+    return candidates
+      .filter(name => name.toLowerCase().includes(normalized))
+      .slice(0, 5);
+  };
+
   const openForm = (log?: MealLog) => {
     if (log) {
       setEditingId(log.id);
@@ -250,7 +289,7 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
                       </div>
                       <input 
                         type="text"
-                        placeholder={item.category === FoodCategory.OTHER ? "自定义名称" : "如: 糙米饭"}
+                        placeholder={item.category === FoodCategory.OTHER ? "自定义名称（支持历史输入提示）" : "如: 糙米饭（支持历史输入提示）"}
                         value={item.name}
                         onChange={(e) => updateFoodItem(item.id, { name: e.target.value })}
                         className="flex-1 bg-white border border-slate-200 text-[11px] rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-amber-500"
@@ -259,6 +298,21 @@ const MealLogger: React.FC<MealLoggerProps> = ({ logs, onAddLog, onBack }) => {
                         <Trash2 size={16} />
                       </button>
                     </div>
+                    {historicalFoodNamesByCategory[item.category]?.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-slate-400 font-bold">{item.category}历史输入：</span>
+                        {getHistoryFoodSuggestions(item.category, item.name).map(name => (
+                          <button
+                            key={`${item.id}-${name}`}
+                            type="button"
+                            onClick={() => updateFoodItem(item.id, { name })}
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-amber-100 text-amber-700 hover:bg-amber-50"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 w-full max-w-[120px]">
                       <Scale size={14} className="text-slate-400" />
                       <input 
