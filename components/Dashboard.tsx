@@ -3,26 +3,24 @@ import React from 'react';
 import { 
   ChevronRight, 
   Droplets, 
+  Scale,
   Utensils, 
-  Activity as ActivityIcon,
-  CheckCircle2,
-  AlertCircle,
-  ClipboardList,
-  ChefHat,
   FileSpreadsheet
 } from 'lucide-react';
-import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming } from '../types';
+import { GlucoseLog, MealLog, ExerciseLog, WeightLog } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts';
 
 interface DashboardProps {
   glucoseLogs: GlucoseLog[];
   mealLogs: MealLog[];
   exerciseLogs: ExerciseLog[];
+  weightLogs: WeightLog[];
   onNavigate: (view: any) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLogs, onNavigate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLogs, weightLogs, onNavigate }) => {
   const latestGlucose = glucoseLogs[0];
+  const latestWeight = weightLogs[0];
   const totalCarbsToday = mealLogs.filter(m => {
     const d = new Date(m.timestamp);
     return d.toDateString() === new Date().toDateString();
@@ -59,6 +57,19 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
             目标: ~150g
           </p>
         </div>
+        <div className="bg-indigo-500 p-4 rounded-3xl text-white shadow-lg shadow-indigo-200 col-span-2">
+          <p className="text-xs opacity-80 mb-1">最新体重</p>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-bold">{latestWeight?.weight || '--'}</span>
+            <span className="text-xs">kg</span>
+          </div>
+          <button
+            onClick={() => onNavigate('weight')}
+            className="text-[10px] mt-2 bg-white/20 px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+          >
+            <Scale size={11} /> 记录体重
+          </button>
+        </div>
       </section>
 
       <section className="bg-emerald-600 p-5 rounded-3xl text-white shadow-lg shadow-emerald-100 flex items-center justify-between">
@@ -94,7 +105,7 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   labelStyle={{ fontWeight: 'bold' }}
                 />
-                <ReferenceArea y1={3.3} y2={6.7} fill="#10b981" fillOpacity={0.05} />
+                <ReferenceArea y1={3.3} y2={6.7} stroke="#10b981" strokeOpacity={0.25} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
@@ -125,6 +136,12 @@ const Dashboard: React.FC<DashboardProps> = ({ glucoseLogs, mealLogs, exerciseLo
           label="记录饮食"
           desc="分类记录您的每一餐"
           onClick={() => onNavigate('meals')}
+        />
+        <ShortcutItem 
+          icon={<Scale className="text-indigo-500" />}
+          label="记录体重"
+          desc="每日记录体重与备注"
+          onClick={() => onNavigate('weight')}
         />
       </section>
     </div>

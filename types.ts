@@ -62,6 +62,13 @@ export interface ExerciseLog {
   timestamp: Date;
 }
 
+export interface WeightLog {
+  id: string;
+  weight: number; // kg
+  note?: string;
+  timestamp: Date;
+}
+
 export interface UserProfile {
   name: string;
   weeksPregnant: number;

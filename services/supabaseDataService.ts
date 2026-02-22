@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming, MealType } from '../types';
+import type { GlucoseLog, MealLog, ExerciseLog, WeightLog, GlucoseTiming, MealType } from '../types';
 
 const toDbGlucose = (log: GlucoseLog, userId: string) => ({
   id: log.id,
@@ -60,6 +60,21 @@ const fromDbExercise = (row: any): ExerciseLog => ({
   timestamp: new Date(row.timestamp),
 });
 
+const toDbWeight = (log: WeightLog, userId: string) => ({
+  id: log.id,
+  user_id: userId,
+  weight: log.weight,
+  note: log.note ?? null,
+  timestamp: new Date(log.timestamp).toISOString(),
+});
+
+const fromDbWeight = (row: any): WeightLog => ({
+  id: row.id,
+  weight: parseFloat(row.weight),
+  note: row.note ?? undefined,
+  timestamp: new Date(row.timestamp),
+});
+
 export async function fetchGlucoseLogs(userId: string): Promise<GlucoseLog[]> {
   const { data, error } = await supabase
     .from('glucose_logs')
@@ -90,6 +105,16 @@ export async function fetchExerciseLogs(userId: string): Promise<ExerciseLog[]> 
   return (data ?? []).map(fromDbExercise);
 }
 
+export async function fetchWeightLogs(userId: string): Promise<WeightLog[]> {
+  const { data, error } = await supabase
+    .from('weight_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('timestamp', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(fromDbWeight);
+}
+
 export async function upsertGlucoseLog(log: GlucoseLog, userId: string): Promise<void> {
   const { error } = await supabase
     .from('glucose_logs')
@@ -108,6 +133,13 @@ export async function upsertExerciseLog(log: ExerciseLog, userId: string): Promi
   const { error } = await supabase
     .from('exercise_logs')
     .upsert(toDbExercise(log, userId), { onConflict: 'id' });
+  if (error) throw error;
+}
+
+export async function upsertWeightLog(log: WeightLog, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('weight_logs')
+    .upsert(toDbWeight(log, userId), { onConflict: 'id' });
   if (error) throw error;
 }
 

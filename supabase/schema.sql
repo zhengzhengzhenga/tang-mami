@@ -42,6 +42,16 @@ CREATE TABLE IF NOT EXISTS exercise_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 体重记录表
+CREATE TABLE IF NOT EXISTS weight_logs (
+  id TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  weight DECIMAL(5,2) NOT NULL,
+  note TEXT,
+  timestamp TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 用户资料表（扩展 auth.users）
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -54,6 +64,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 ALTER TABLE glucose_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meal_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exercise_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weight_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS 策略：用户只能访问自己的数据
@@ -66,6 +77,9 @@ CREATE POLICY "Users can CRUD own meal_logs" ON meal_logs
 CREATE POLICY "Users can CRUD own exercise_logs" ON exercise_logs
   FOR ALL USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can CRUD own weight_logs" ON weight_logs
+  FOR ALL USING (auth.uid() = user_id);
+
 CREATE POLICY "Users can CRUD own user_profiles" ON user_profiles
   FOR ALL USING (auth.uid() = id);
 
@@ -73,3 +87,4 @@ CREATE POLICY "Users can CRUD own user_profiles" ON user_profiles
 CREATE INDEX IF NOT EXISTS idx_glucose_logs_user_timestamp ON glucose_logs(user_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_meal_logs_user_timestamp ON meal_logs(user_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_exercise_logs_user_timestamp ON exercise_logs(user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_weight_logs_user_timestamp ON weight_logs(user_id, timestamp DESC);

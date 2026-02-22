@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Utensils,
   Droplets,
+  Scale,
   User as UserIcon,
   TrendingUp,
   Calendar,
@@ -9,7 +10,7 @@ import {
   Download,
   LogOut
 } from 'lucide-react';
-import { GlucoseLog, MealLog, ExerciseLog, GlucoseTiming, MealType } from './types';
+import { GlucoseLog, MealLog, ExerciseLog, WeightLog } from './types';
 import Dashboard from './components/Dashboard';
 import GlucoseTracker from './components/GlucoseTracker';
 import MealLogger from './components/MealLogger';
@@ -17,18 +18,21 @@ import AIAdvisor from './components/AIAdvisor';
 import DailyReport from './components/DailyReport';
 import MenuPlanner from './components/MenuPlanner';
 import DataExport from './components/DataExport';
+import WeightTracker from './components/WeightTracker';
 import AuthScreen from './components/AuthScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import {
   fetchGlucoseLogs,
   fetchMealLogs,
   fetchExerciseLogs,
+  fetchWeightLogs,
   upsertGlucoseLog,
   deleteGlucoseLog,
   upsertMealLog,
+  upsertWeightLog,
 } from './services/supabaseDataService';
 
-type View = 'dashboard' | 'glucose' | 'meals' | 'exercise' | 'chat' | 'profile' | 'daily' | 'planner' | 'export';
+type View = 'dashboard' | 'glucose' | 'meals' | 'weight' | 'exercise' | 'chat' | 'profile' | 'daily' | 'planner' | 'export';
 
 const MainApp: React.FC = () => {
   const { user, username, signOut, loading: authLoading } = useAuth();
@@ -36,6 +40,7 @@ const MainApp: React.FC = () => {
   const [glucoseLogs, setGlucoseLogs] = useState<GlucoseLog[]>([]);
   const [mealLogs, setMealLogs] = useState<MealLog[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const userId = user?.id ?? '';
@@ -48,12 +53,17 @@ const MainApp: React.FC = () => {
       fetchGlucoseLogs(userId),
       fetchMealLogs(userId),
       fetchExerciseLogs(userId),
+      fetchWeightLogs(userId).catch((err) => {
+        console.error('Fetch weight logs failed:', err);
+        return [];
+      }),
     ])
-      .then(([g, m, e]) => {
+      .then(([g, m, e, w]) => {
         if (!cancelled) {
           setGlucoseLogs(g);
           setMealLogs(m);
           setExerciseLogs(e);
+          setWeightLogs(w);
         }
       })
       .catch(console.error)
@@ -128,6 +138,27 @@ const MainApp: React.FC = () => {
     [syncMeal]
   );
 
+  const handleAddWeight = useCallback(
+    (log: WeightLog) => {
+      setWeightLogs((prev) => {
+        const exists = prev.find((l) => l.id === log.id);
+        if (exists) {
+          return prev
+            .map((l) => (l.id === log.id ? log : l))
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        return [log, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      });
+      if (userId) {
+        upsertWeightLog(log, userId).catch((err) => {
+          console.error('Sync weight failed:', err);
+          alert(`体重保存到云端失败：${err?.message || '请先检查 Supabase 是否已创建 weight_logs 表及 RLS 策略'}`);
+        });
+      }
+    },
+    [userId]
+  );
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -136,6 +167,7 @@ const MainApp: React.FC = () => {
             glucoseLogs={glucoseLogs}
             mealLogs={mealLogs}
             exerciseLogs={exerciseLogs}
+            weightLogs={weightLogs}
             onNavigate={(v) => setCurrentView(v)}
           />
         );
@@ -162,6 +194,14 @@ const MainApp: React.FC = () => {
           <DailyReport
             glucoseLogs={glucoseLogs}
             mealLogs={mealLogs}
+            onBack={() => setCurrentView('dashboard')}
+          />
+        );
+      case 'weight':
+        return (
+          <WeightTracker
+            logs={weightLogs}
+            onAddLog={handleAddWeight}
             onBack={() => setCurrentView('dashboard')}
           />
         );
@@ -270,6 +310,12 @@ const MainApp: React.FC = () => {
           onClick={() => setCurrentView('meals')}
           icon={<Utensils size={20} />}
           label="饮食"
+        />
+        <NavButton
+          active={currentView === 'weight'}
+          onClick={() => setCurrentView('weight')}
+          icon={<Scale size={20} />}
+          label="体重"
         />
         <NavButton
           active={currentView === 'export'}
